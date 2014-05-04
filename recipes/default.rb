@@ -125,16 +125,130 @@ end
 #   not_if { ::File.exists?("#{home}/config/config.inc.php") }
 # end
 
-#include_recip
-define :piwik_xxxx,
-       :action => :create,
-       :timezone => "Asia/Tokyo",
-       :ecommerce => "0" do
-#  params[:name]
-#  params[:action]
-#  params[:siteName]
-#  params[:url]
-#  params[:timezone]
-#  params[:ecommerce]
+#include_recipe 'bash'
+
+#piwik_private_php_cgi "test" do
+#	cwd '/var/www/html/phpmyadmin'
+#	path '/phpmyadmin/phpinfo_.php'
+##	query "aaaa=bbb", "ccc=ddd"
+#end
+
+cookie_tmp = Tempfile.new('coockie')
+session_cookie = 'a'
+
+[
+	{ :query => [ "aaaa=bbb" ], :data => [ ] },
+	{ :query => [ ], :data => [ ] }
+#	{ :query => [ "aaaa=bbb", "ccc=ddd" ], :data => [ "fff=ddd", "eee=fff" ] }
+].each do |w|
+
+ruby_block "block test a" do
+  block do
+    p "aaaaaaaaaaaaaaaaaaaa"
+    p session_cookie
+    p "cccccccccccccccccccc"
+  end
 end
 
+#	cwd_ = home
+#	path = '/piwik/'
+#	realpath = 'index.php'
+#	query = w[:query].join("&")
+#	data = w[:data].join("&")
+#	ip = '127.0.0.1'
+#	host = 'localhost'
+#	port = '80'
+#	cookie = session_cookie
+
+	b = bash "call php-cgi" do
+		cwd_ = home
+		path = '/piwik/'
+		realpath = 'index.php'
+		query = w[:query].join("&")
+		data = w[:data].join("&")
+		ip = '127.0.0.1'
+		host = 'localhost'
+		port = '80'
+		cookie = session_cookie
+
+		cwd cwd_
+		code <<-EOH2
+		#	set > _.html
+			echo "query=#{query}"
+			echo "session_cookie=#{session_cookie}"
+			echo "cookie=#{cookie}"
+			echo "#{data}" | php-cgi > "#{cookie_tmp.path}"
+			echo "#{cookie_tmp.path}" > _.html
+			cat "#{cookie_tmp.path}" >> _.html
+		#	set >> _.html
+		EOH2
+		environment 'DOCUMENT_ROOT' => cwd_,
+		            'HOME' => cwd_,
+		            'SCRIPT_FILENAME' => realpath,
+		            'DOCUMENT_URI' => path,
+		            'SCRIPT_NAME' => path,
+		            'PHP_SELF' => path,
+		            'REQUEST_URI' => path + '?' + query,
+		            'REQUEST_METHOD' => w[:data].empty? ? 'GET' : 'POST',
+		            'CONTENT_TYPE' => w[:data].empty? ? '' : 'application/x-www-form-urlencoded',
+		            'CONTENT_LENGTH' => data.length.to_s(10),
+		            'RAW_POST_DATA' => data,
+		            'QUERY_STRING' => query,
+		            'SERVER_PROTOCOL' => 'HTTP/1.1',
+		            'REMOTE_ADDR' => ip,
+		            'REMOTE_PORT' => '52056',
+		            'SERVER_ADDR' => ip,
+		            'SERVER_PORT' => port,
+		            'SERVER_NAME' => host,
+		            'REDIRECT_STATUS' => "CGI",
+		            'HTTP_HOST' => "#{host}:#{port}",
+		            'HTTP_COOKIE' => cookie
+	end
+#	b.xxx = 'aaa'
+	b.run_action(:run)
+
+#	cookie_tmp.rewind
+#	while s = cookie_tmp.gets
+#		puts "aaa #{s}"
+#	end
+
+#	bash "session_cookie" do
+#		cwd cwd_
+#		code <<-EOH
+#			cat "#{cookie_tmp.path}" | grep "Cookie"
+#		EOH
+#	end
+
+	headers = []
+#	ruby_block "block test 0" do
+#		block do
+			IO.foreach(cookie_tmp.path) do |s|
+				if s.empty? then
+					break
+				end
+				headers += s.scan(/(\S+): ([^\r\n]+)/)
+			end
+			headers.each do |header|
+				if "Set-Cookie" == header[0] then
+					session_cookie = header[1]
+				end
+			end
+#		end
+#	end
+
+#ruby_block "block test 1" do
+#  block do
+#    p "aaaaaaaaaaaaaaaaaaaa"
+#    p headers
+#    p session_cookie
+#    p "bbbbbbbbbbbbbbbbbbb"
+#  end
+#end
+
+#	bash "session_cookie" do
+#		cwd cwd_
+#		code <<-EOH
+#			echo "session_cookie=#{session_cookie}"
+#		EOH
+#	end
+end
