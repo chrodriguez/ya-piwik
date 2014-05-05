@@ -88,46 +88,10 @@ end
 #{node["ya-piwik"]["root"]["pass"]}
 #{node["ya-piwik"]["root"]["email"]}
 
-
-# initialize piwik with create first user and site
-# bash 'initialize piwik' do
-#   cwd #{home}
-#   code <<-EOH
-#     
-#   EOH
-#   code_ <<-EOH
-#     curl               -c tmp/cookie -L -X GET "#{url}" >/dev/null
-#     curl -b tmp/cookie -c tmp/cookie -L -X GET "#{url}?action=systemCheck" >/dev/null
-#     curl -b tmp/cookie -c tmp/cookie -L -X GET "#{url}?action=databaseSetup" >/dev/null
-#     curl -b tmp/cookie -c tmp/cookie -L -d 'host=#{node["ya-piwik"]["database"]["host"]}' \
-#                                         -d 'username=#{node["ya-piwik"]["database"]["user"]}' \
-#                                         -d 'password=#{node["ya-piwik"]["database"]["pass"]}' \
-#                                         -d 'dbname=#{node["ya-piwik"]["database"]["name"]}' \
-#                                         -d 'tables_prefix=#{node["ya-piwik"]["database"]["prefix"]}' \
-#                                         -d 'adapter=#{node["ya-piwik"]["database"]["adapter"]}' \
-#                                         -X POST "#{url}?action=databaseSetup" >/dev/null
-#     curl -b tmp/cookie -c tmp/cookie -L -X GET "#{url}?action=generalSetup&amp;module=Installation" >/dev/null
-#     curl -b tmp/cookie -c tmp/cookie -d 'login=#{node["ya-piwik"]["root"]["user"]}' \
-#                                      -d 'password=#{node["ya-piwik"]["root"]["pass"]}' \
-#                                      -d 'password_bis=#{node["ya-piwik"]["root"]["pass"]}' \
-#                                      -d 'email=#{node["ya-piwik"]["root"]["email"]}' \
-#                                      -X POST "#{url}?action=generalSetup&amp;module=Installation" >/dev/null
-#     curl -b tmp/cookie -c tmp/cookie -L -X GET "#{url}?action=firstWebsiteSetup&amp;module=Installation" >/dev/null
-#     curl -b tmp/cookie -c tmp/cookie -d 'siteName=pkg.hsp-users.jp' \
-#                                      -d 'url=http://pkg.hsp-users.jp/' \
-#                                      -d 'timezone=Asia/Tokyo' \
-#                                      -d 'ecommerce=0' \
-#                                      -X POST "#{url}?action=firstWebsiteSetup&amp;module=Installation" >/dev/null
-#     curl -b tmp/cookie -c tmp/cookie -L -X GET "#{url}?action=trackingCode&amp;module=Installation" >/dev/null
-#     curl -b tmp/cookie -c tmp/cookie -L -X GET "#{url}?action=finished&amp;module=Installation" >/dev/null
-#     rm -f tmp/cookie
-#   EOH
-#   not_if { ::File.exists?("#{home}/config/config.inc.php") }
-# end
-
 session_tmp = Tempfile.new('session')
 session_cookie = ''
 
+# initialize piwik with create first user and site
 [
   { :path => 'index.php', :query => [ ], :data => [ ] },
   { :path => 'index.php', :query => [ "action=systemCheck" ], :data => [ ] },
@@ -172,15 +136,14 @@ session_cookie = ''
       cookie = session_cookie
   
       cwd cwd_
-      code <<-EOH2
-      #  set > _.html
-        echo "**************** path=#{path}"
-        echo "**************** query=#{query}"
-        echo "**************** data=#{data}"
-        echo "**************** cookie=#{cookie}"
+      code <<-EOH
+#       echo "**************** path=#{path}"
+#       echo "**************** query=#{query}"
+#       echo "**************** data=#{data}"
+#       echo "**************** cookie=#{cookie}"
         echo '#{data}' | php-cgi > "#{session_tmp.path}"
-         cat "#{session_tmp.path}" | head -n 20
-      EOH2
+#        cat "#{session_tmp.path}" | head -n 20
+      EOH
       environment 'DOCUMENT_ROOT' => cwd_,
                   'HOME' => cwd_,
                   'SCRIPT_FILENAME' => realpath,
@@ -209,6 +172,7 @@ session_cookie = ''
     headers = []
     redirect = false
     IO.foreach(session_tmp.path) do |s|
+      s = s.gsub(/[\r\n]/, '')
       if s.empty? then
         break
       end
@@ -229,6 +193,20 @@ session_cookie = ''
 
     if ! redirect then
       break
+    end
+  end
+
+  # test, was piwik installed? 
+  if w[:data].empty? then
+    s = File.open(session_tmp.path).read
+    if s.include?("login_form") then
+      Chef::Log.info("piwik was installed")
+      break
+    else
+      # Delete the configuration file, it is because Setup will fail
+      file "#{home}/config/config.inc.php" do
+        action :delete
+      end
     end
   end
 
