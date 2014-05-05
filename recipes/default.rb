@@ -125,7 +125,7 @@ end
 #   not_if { ::File.exists?("#{home}/config/config.inc.php") }
 # end
 
-cookie_tmp = Tempfile.new('coockie')
+session_tmp = Tempfile.new('session')
 session_cookie = ''
 
 [
@@ -145,15 +145,14 @@ session_cookie = ''
                                       "password=#{node['ya-piwik']['root']['pass']}",
                                       "password_bis=#{node['ya-piwik']['root']['pass']}",
                                       "email=#{node['ya-piwik']['root']['email']}" ] },
-  { :path => 'index.php', :query => [ "action=firstWebsiteSetup", "module=Installation" ], :data => [ ] },
+# { :path => 'index.php', :query => [ "action=firstWebsiteSetup", "module=Installation" ], :data => [ ] },
   { :path => 'index.php', :query => [ "action=firstWebsiteSetup", "module=Installation" ],
                           :data =>  [ "siteName=pkg.hsp-users.jp",
                                       "url=http://pkg.hsp-users.jp/",
                                       "timezone=Asia/Tokyo",
                                       "ecommerce=0" ] },
-  { :path => 'index.php', :query => [ "action=trackingCode", "module=Installation" ], :data => [ ] },
+# { :path => 'index.php', :query => [ "action=trackingCode", "module=Installation" ], :data => [ ] },
   { :path => 'index.php', :query => [ "action=finished", "module=Installation" ], :data => [ ] }
-#	{ :query => [ "aaaa=bbb", "ccc=ddd" ], :data => [ "fff=ddd", "eee=fff" ] }
 ].each do |w|
 
   query = w[:query].join("&")
@@ -179,9 +178,8 @@ session_cookie = ''
         echo "**************** query=#{query}"
         echo "**************** data=#{data}"
         echo "**************** cookie=#{cookie}"
-        echo '#{data}' | php-cgi > "#{cookie_tmp.path}"
-        cat "#{cookie_tmp.path}"
-      #  set >> _.html
+        echo '#{data}' | php-cgi > "#{session_tmp.path}"
+         cat "#{session_tmp.path}" | head -n 20
       EOH2
       environment 'DOCUMENT_ROOT' => cwd_,
                   'HOME' => cwd_,
@@ -210,7 +208,7 @@ session_cookie = ''
     # parse headers from php-cgi results
     headers = []
     redirect = false
-    IO.foreach(cookie_tmp.path) do |s|
+    IO.foreach(session_tmp.path) do |s|
       if s.empty? then
         break
       end
