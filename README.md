@@ -1,24 +1,29 @@
-ya-piwik Cookbook
-=================
+Yet Another Piwik management cookbook
+=====================================
 TODO: Enter the cookbook description here.
 
 e.g.
 This cookbook makes your favorite breakfast sandwich.
 
 Requirements
-------------
+============
 TODO: List your cookbook requirements. Be sure to include any requirements this cookbook has on platforms, libraries, other cookbooks, packages, operating systems, etc.
 
-e.g.
-#### packages
-- `toaster` - ya-piwik needs toaster to brown your bagel.
+## packages
+
+- `php` - ya-piwik needs php.
+- `nginx` - ya-piwik needs nginx if `node['ya-piwik']['fpm']['enable']` was `true`.
+
+Supported Operating Systems
+===========================
+
+* CentOS 6.0 or later
 
 Attributes
-----------
-TODO: List your cookbook attributes here.
+==========
 
-e.g.
-#### ya-piwik::default
+## `ya-piwik::default`
+
 <table>
   <tr>
     <th>Key</th>
@@ -27,19 +32,175 @@ e.g.
     <th>Default</th>
   </tr>
   <tr>
-    <td><tt>['ya-piwik']['bacon']</tt></td>
+    <td><tt>['ya-piwik']['home']</tt></td>
+    <td>String</td>
+    <td>piwik install directory</td>
+    <td><tt>'/var/www/html/piwik/'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['fpm']['enable']</tt></td>
     <td>Boolean</td>
-    <td>whether to include bacon</td>
+    <td>php-fpm enable <strong>(required <a href="https://github.com/priestjim/chef-php">php</a> cookbook)</strong></td>
     <td><tt>true</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['fpm']['user']</tt></td>
+    <td>String</td>
+    <td>php-fpm usarname</td>
+    <td><tt>true</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['fpm']['group']</tt></td>
+    <td>String</td>
+    <td>php-fpm group</td>
+    <td><tt>''</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['fpm']['socket']</tt></td>
+    <td>String</td>
+    <td>php-fpm socket name</td>
+    <td><tt>'/var/run/php-fpm/piwik.php-fpm.sock'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['database']['host']</tt></td>
+    <td>String</td>
+    <td>database server host name</td>
+    <td><tt>'127.0.0.1'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['database']['user']</tt></td>
+    <td>String</td>
+    <td>database user name</td>
+    <td><tt>'root'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['database']['pass']</tt></td>
+    <td>String</td>
+    <td>database password</td>
+    <td><tt>'secret-password-here'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['database']['name']</tt></td>
+    <td>String</td>
+    <td>database name</td>
+    <td><tt>'piwik'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['database']['prefix']</tt></td>
+    <td>String</td>
+    <td>database table prefix</td>
+    <td><tt>''</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['database']['adapter']</tt></td>
+    <td>String</td>
+    <td>database adapter <tt>'MYSQL'</tt> or <tt>'MYSQLI'</tt></td>
+    <td><tt>'MYSQLI'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['root']['user']</tt></td>
+    <td>String</td>
+    <td>username of root user</td>
+    <td><tt>'root'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['root']['pass']</tt></td>
+    <td>String</td>
+    <td>password of root user</td>
+    <td><tt>'secret-password-here'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['root']['email']</tt></td>
+    <td>String</td>
+    <td>email of root user</td>
+    <td><tt>'piwik@example.net'</tt></td>
   </tr>
 </table>
 
-Usage
------
-#### ya-piwik::default
-TODO: Write usage instructions for each cookbook.
+LWRP
+====
 
-e.g.
+## `ya_piwik_site`
+
+this LWRP is create new or overwrite site to piwik.
+
+
+### Actions
+
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td><tt>:create</tt></td>
+    <td>create site configuration</td>
+  </tr>
+</table>
+
+### Parameters
+
+<table>
+  <tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Required</th>
+    <th>Description</th>
+    <th>Default</th>
+  </tr>
+  <tr>
+    <td><tt>idsite</tt></td>
+    <td>Fixnum</td>
+    <td>false</td>
+    <td>site id of site</td>
+    <td><tt>0</tt></td>
+  </tr>
+  <tr>
+    <td><tt>siteName</tt></td>
+    <td>String</td>
+    <td>true</td>
+    <td>site name of new site</td>
+    <td><tt> </tt></td>
+  </tr>
+  <tr>
+    <td><tt>urls</tt></td>
+    <td>String | String of Array</td>
+    <td>true</td>
+    <td>url of new site, Overwrite the site that matches the URL if not <tt>idsite</tt> specified</td>
+    <td><tt> </tt></td>
+  </tr>
+  <tr>
+    <td><tt>timezone</tt></td>
+    <td>String</td>
+    <td>false</td>
+    <td>timezone of new site</td>
+    <td><tt>'Asia/Tokyo'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>ecommerce</tt></td>
+    <td>String</td>
+    <td>false</td>
+    <td>promote e-commerce of new site</td>
+    <td><tt>'0'</tt></td>
+  </tr>
+</table>
+
+### Example
+
+```
+ya_piwik_site 'make piwik main site' do
+  idsite 1
+  siteName 'My blog'
+  urls 'http://blog.example.net/'
+  action :create
+end
+```
+
+Usage
+=====
+
+## `ya-piwik::default`
+
 Just include `ya-piwik` in your node's `run_list`:
 
 ```json
@@ -52,10 +213,8 @@ Just include `ya-piwik` in your node's `run_list`:
 ```
 
 Contributing
-------------
-TODO: (optional) If this is a public cookbook, detail the process for contributing. If this is a private cookbook, remove this section.
+============
 
-e.g.
 1. Fork the repository on Github
 2. Create a named feature branch (like `add_component_x`)
 3. Write your change
@@ -64,5 +223,10 @@ e.g.
 6. Submit a Pull Request using Github
 
 License and Authors
--------------------
-Authors: TODO: List authors
+===================
+
+Copyright (c) 2014 sharkpp
+
+This cookbook is under The MIT License.
+
+Full license text, please refer to the `LICENSE`.

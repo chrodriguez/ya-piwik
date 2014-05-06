@@ -2,9 +2,9 @@
 # Cookbook Name:: ya-piwik
 # Provider:: ya_piwik_site
 #
-# Copyright 2014, YOUR_COMPANY_NAME
+# Copyright 2014, sharkpp
 #
-# All rights reserved - Do Not Redistribute
+# The MIT License
 #
 
 require 'json'
