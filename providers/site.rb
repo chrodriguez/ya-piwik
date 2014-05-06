@@ -27,18 +27,20 @@ action :create do
 
   session_tmp = Tempfile.new('session')
   session_cookie = ''
-  idsite = ''
+  idsite = new_resource.idsite
+  urls = new_resource.urls
+  urls = [ urls ] if urls.instance_of?(String)
 
   [
     { :path => 'index.php', :query => [ "module=API",
                                         "method=SitesManager.getSitesIdFromSiteUrl",
-                                        "url=#{new_resource.url}",
+                                        "url=#{new_resource.urls[0]}",
                                         "format=JSON",
                                         "token_auth=#{token}" ], :data => [ ] },
     { :path => 'index.php', :query => [ "module=API",
                                         "method=SitesManager.addSite",
                                         "siteName=#{new_resource.siteName}",
-                                        "url=#{new_resource.url}",
+                                        "urls[0]=",
                                         "timezone=#{new_resource.timezone}",
                                         "ecommerce=#{new_resource.ecommerce}",
                                         "format=JSON",
@@ -49,10 +51,26 @@ action :create do
     query = w[:query].join("&")
     data  = w[:data].join("&")
 
-    # change 'add' to 'update' if idsite valid
-    if query.include?("SitesManager.addSite") && ! idsite.empty? then
-      query = query.sub(".addSite", ".updateSite")
-      query+= "&idSite=#{idsite}"
+    # do not get 'idsite' if is specified in advance
+    if query.include?("SitesManager.getSitesIdFromSiteUrl") && 0 < idsite then
+      Chef::Log.debug("piwik idsite was already specified: #{idsite.to_s}")
+      next
+    end
+
+    if query.include?("SitesManager.addSite") then
+      # change 'add' to 'update' if idsite valid
+      if 0 < idsite then
+        query = query.sub(".addSite", ".updateSite")
+        query+= "&idSite=#{idsite.to_s}"
+      end
+      # set urls
+      urls_ = []
+      i = 0
+      urls.each do |url|
+        urls_ += [ "urls[#{i.to_s}]=#{url}" ]
+        i += 1
+      end
+      query = query.sub("urls[0]=", urls_.join("&"))
     end
 
     for i in (1..5).to_a # maximum 5 redirect support
@@ -70,12 +88,12 @@ action :create do
 
         cwd cwd_
         code <<-EOH
-         echo "**************** path=#{path}"
-         echo "**************** query=#{query}"
-         echo "**************** data=#{data}"
-         echo "**************** cookie=#{cookie}"
+#         echo "**************** path=#{path}"
+#         echo "**************** query=#{query}"
+#         echo "**************** data=#{data}"
+#         echo "**************** cookie=#{cookie}"
           echo '#{data}' | php-cgi > "#{session_tmp.path}"
-          cat "#{session_tmp.path}" | head -n 20
+#         cat "#{session_tmp.path}" | head -n 20
         EOH
         environment 'DOCUMENT_ROOT' => cwd_,
                     'HOME' => cwd_,
@@ -144,7 +162,7 @@ action :create do
     # _
     case w[:query][1]
     when "method=SitesManager.getSitesIdFromSiteUrl"
-      idsite = api_result[0]['idsite'].to_s
+      idsite = api_result[0]['idsite']
     end
 
   end
