@@ -13,7 +13,16 @@ action :create do
   Chef::Log.info("Creating piwik site configuration for: #{new_resource.siteName}")
 
   # get auth_token from root user
-  token = `mysql -B -r -u #{node['ya-piwik']['database']['user']} --password=#{node['ya-piwik']['database']['pass']} --execute='SELECT \`token_auth\` FROM \`#{node['ya-piwik']['database']['prefix']}user\` WHERE \`login\` = "root"' "#{node['ya-piwik']['database']['name']}" | grep -v "token_auth"`
+  token_cmdline = [
+    "mysql -B -r",
+          "-u \"#{node['ya-piwik']['database']['user']}\"",
+          "--password='#{node['ya-piwik']['database']['pass']}'",
+          "--execute='SELECT \`token_auth\`",
+                     "FROM \`#{node['ya-piwik']['database']['prefix']}user\`",
+                     "WHERE \`login\` = \"root\"'",
+          "\"#{node['ya-piwik']['database']['name']}\"",
+    "| grep -v token_auth" ]
+  token = `#{token_cmdline.join(" ")}`
   token = token.sub(/[\r\n]/, '')
 
   session_tmp = Tempfile.new('session')
