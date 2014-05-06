@@ -1,21 +1,24 @@
-Yet Another Piwik management cookbook
-=====================================
-TODO: Enter the cookbook description here.
+ya-piwik cookbook
+=================
 
-e.g.
-This cookbook makes your favorite breakfast sandwich.
+This cookbook is install and management for piwik.
+
+ya-piwik is an abbreviation for Yet Another Piwik.
+
+Now, this cookbook you can in the following list:
+
+* install piwik
+* site management (create and update)
 
 Requirements
 ============
-TODO: List your cookbook requirements. Be sure to include any requirements this cookbook has on platforms, libraries, other cookbooks, packages, operating systems, etc.
 
-## packages
+## Cookbooks
 
 - `php` - ya-piwik needs php.
 - `nginx` - ya-piwik needs nginx if `node['ya-piwik']['fpm']['enable']` was `true`.
 
-Supported Operating Systems
-===========================
+## Operating Systems
 
 * CentOS 6.0 or later
 
