@@ -24,8 +24,8 @@ home = node['ya-piwik']['home']
 url = "http://localhost:80/piwik/"
 nginx_sites_available = "#{node['nginx']['dir']}/sites-available/local-piwik"
 nginx_sites_enabled   = "#{node['nginx']['dir']}/sites-enabled/local-piwik"
-user  = 'nginx'
-group = 'nginx'
+user  = node['ya-piwik']['fpm']['user']
+group = node['ya-piwik']['fpm']['group']
 
 #####################################################
 
@@ -66,27 +66,24 @@ bash 'extract piwik' do
 end
 
 # setup php-fpm configuration
-php_fpm "ya-piwik" do
-  action :add
-  user user
-  group group
-  socket true
-  socket_path node['ya-piwik']['socket']
-  socket_perms "0666"
-  terminate_timeout (node['php']['ini_settings']['max_execution_time'].to_i + 20)
-# slow_filename "#{node['php']['fpm_log_dir']}/pkg.hsp-users.jp.slow.log"
-  value_overrides({
-#    :chdir => home
-#    :error_log => "#{node['php']['fpm_log_dir']}/pkg.hsp-users.jp.error.log"
-  })
-  env_overrides({
-    :FUEL_ENV => "production"
-  })
+if node['ya-piwik'].attribute?('fpm') &&
+   node['ya-piwik']['fpm'].attribute?('enable') &&
+   node['ya-piwik']['fpm']['enable']
+  php_fpm "ya-piwik" do
+    action :add
+    user user
+    group group
+    socket true
+    socket_path node['ya-piwik']['fpm']['socket']
+    socket_perms "0666"
+    terminate_timeout (node['php']['ini_settings']['max_execution_time'].to_i + 20)
+#   slow_filename "#{node['php']['fpm_log_dir']}/pkg.hsp-users.jp.slow.log"
+    value_overrides({
+#      :chdir => home
+#      :error_log => "#{node['php']['fpm_log_dir']}/pkg.hsp-users.jp.error.log"
+    })
+  end
 end
-
-#{node["ya-piwik"]["root"]["user"]}
-#{node["ya-piwik"]["root"]["pass"]}
-#{node["ya-piwik"]["root"]["email"]}
 
 session_tmp = Tempfile.new('session')
 session_cookie = ''

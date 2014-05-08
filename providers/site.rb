@@ -19,7 +19,7 @@ action :create do
           "--password='#{node['ya-piwik']['database']['pass']}'",
           "--execute='SELECT \`token_auth\`",
                      "FROM \`#{node['ya-piwik']['database']['prefix']}user\`",
-                     "WHERE \`login\` = \"root\"'",
+                     "WHERE \`login\` = \"#{node['ya-piwik']['root']['user']}\"'",
           "\"#{node['ya-piwik']['database']['name']}\"",
     "| grep -v token_auth" ]
   token = `#{token_cmdline.join(" ")}`
