@@ -27,12 +27,6 @@ module YaPiwik
     def run(ctx, path, query = [], data = [])
       raise 'Context not present!' unless ctx.is_a?(Context)
 
-      p "________________________________________"
-      p path
-      p query
-      p data
-      p ctx.cookie
-
       session_tmp = Tempfile.new('session')
 
       query_ = query.join("&")
@@ -48,16 +42,16 @@ module YaPiwik
         host   = 'localhost'
         port   = '80'
 
+        Chef::Log.debug("[YaPiwik::PhpHeadlessBrowser]: request:path='#{path_}'")
+        Chef::Log.debug("[YaPiwik::PhpHeadlessBrowser]: request:query='#{query_}'")
+        Chef::Log.debug("[YaPiwik::PhpHeadlessBrowser]: request:data='#{data_}'")
+        Chef::Log.debug("[YaPiwik::PhpHeadlessBrowser]: request:cookie='#{ctx.cookie}'")
+
         # execute php-cgi
         bash = Chef::Resource::Script::Bash.new('execute php-cgi', ctx.run_context)
         bash.cwd ctx.cwd
         bash.code <<-EOH
-#         echo "**************** path=#{path_}"
-#         echo "**************** query=#{query_}"
-#         echo "**************** data=#{data_}"
-#         echo "**************** cookie=#{ctx.cookie}"
           echo '#{data_}' | php-cgi > "#{session_tmp.path}"
-#         cat "#{session_tmp.path}" | head -n 20
         EOH
         bash.environment 'DOCUMENT_ROOT' => ctx.cwd,
                          'HOME' => ctx.cwd,
@@ -113,6 +107,10 @@ module YaPiwik
             redirect = true
           end
         end
+
+        Chef::Log.debug("[YaPiwik::PhpHeadlessBrowser]: response:header=#{ctx.response[:headers]}")
+        Chef::Log.debug("[YaPiwik::PhpHeadlessBrowser]: response:cookie='#{ctx.cookie}'")
+        Chef::Log.debug("[YaPiwik::PhpHeadlessBrowser]: response:body='#{ctx.response[:body][0,256]}'")
 
         if ! redirect then
           break
