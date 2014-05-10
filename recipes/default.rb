@@ -29,6 +29,12 @@ group = node['ya-piwik']['fpm']['group']
 
 #####################################################
 
+ctx = PhpHeadlessBrowser::Context.new
+
+PhpHeadlessBrowser.run(ctx, 'index2.php')
+
+#####################################################
+
 # create home directory
 directory home do
 	owner user
