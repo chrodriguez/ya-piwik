@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: ya-piwik
-# Attribute:: default
+# Libraries:: php_headless_browser
 #
 # Copyright 2014, sharkpp
 #
@@ -14,6 +14,7 @@ module YaPiwik
       attr_accessor :run_context
       attr_accessor :cwd, :max_redirect
       attr_accessor :response, :cookie
+
       def initialize(run_context = nil)
         raise 'Chef::RunContext not present!' unless run_context.is_a?(Chef::RunContext)
         @run_context = run_context

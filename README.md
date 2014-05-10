@@ -199,6 +199,18 @@ ya_piwik_site 'make piwik main site' do
 end
 ```
 
+Libraries
+=========
+
+YaPiwik::API class is call piwik API helper.
+
+### Example
+
+```
+  api = YaPiwik::API.new(node.run_context)
+  idsite = api.site_id_from_site_url('http://blog.example.net/') # idsite => 1
+```
+
 Usage
 =====
 
