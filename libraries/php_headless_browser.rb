@@ -11,56 +11,61 @@ module YaPiwik
   module PhpHeadlessBrowser
 
     class Context
-      attr_accessor :cookie
-      class << self
-        def initialize
-          @cookie = ''
-        end
+      attr_accessor :run_context
+      attr_accessor :cwd, :max_redirect
+      attr_accessor :response, :cookie
+      def initialize(run_context = nil)
+        raise 'Chef::RunContext not present!' unless run_context.is_a?(Chef::RunContext)
+        @run_context = run_context
+        @cwd = '/var/www/html/'
+        @max_redirect = 10 # maximum 10 redirect support
+        @response = { :body => '', :headers => [] }
+        @cookie = ''
       end
     end
 
-    def run(ctx, url, query = [], data = [])
+    def run(ctx, path, query = [], data = [])
       raise 'Context not present!' unless ctx.is_a?(Context)
+
       p "________________________________________"
-      p url
+      p path
       p query
       p data
+      p ctx.cookie
 
       session_tmp = Tempfile.new('session')
 
       query_ = query.join("&")
       data_  = data.join("&")
-    
-      for i in (1..5).to_a # maximum 5 redirect support
 
-        cwd_   = '/var/www/html/piwik/'
-        path   = '/piwik/'
+      i = 0
+      while i < ctx.max_redirect && 0 < ctx.max_redirect
+        i += 1
+
+        path_  = '/piwik/'
         realpath= 'index.php'
         ip     = '127.0.0.1'
         host   = 'localhost'
         port   = '80'
 
         # execute php-cgi
-#        node = Chef::Node.new
-node=nil
-        run_context = Chef::RunContext.new(node, {}, nil)
-        bash = Chef::Resource::Script::Bash.new('execute php-cgi', run_context)
-        bash.cwd cwd_
+        bash = Chef::Resource::Script::Bash.new('execute php-cgi', ctx.run_context)
+        bash.cwd ctx.cwd
         bash.code <<-EOH
-          echo "**************** path=#{path}"
-          echo "**************** query=#{query_}"
-          echo "**************** data=#{data_}"
-          echo "**************** cookie=#{ctx.cookie}"
-           echo '#{data_}' | php-cgi > "#{session_tmp.path}"
-           cat "#{session_tmp.path}" | head -n 20
+#         echo "**************** path=#{path_}"
+#         echo "**************** query=#{query_}"
+#         echo "**************** data=#{data_}"
+#         echo "**************** cookie=#{ctx.cookie}"
+          echo '#{data_}' | php-cgi > "#{session_tmp.path}"
+#         cat "#{session_tmp.path}" | head -n 20
         EOH
-        bash.environment 'DOCUMENT_ROOT' => cwd_,
-                         'HOME' => cwd_,
+        bash.environment 'DOCUMENT_ROOT' => ctx.cwd,
+                         'HOME' => ctx.cwd,
                          'SCRIPT_FILENAME' => realpath,
-                         'DOCUMENT_URI' => path,
-                         'SCRIPT_NAME' => path,
-                         'PHP_SELF' => path,
-                         'REQUEST_URI' => path + '?' + query_,
+                         'DOCUMENT_URI' => path_,
+                         'SCRIPT_NAME' => path_,
+                         'PHP_SELF' => path_,
+                         'REQUEST_URI' => path_ + '?' + query_,
                          'REQUEST_METHOD' => data_.empty? ? 'GET' : 'POST',
                          'CONTENT_TYPE' => data_.empty? ? '' : 'application/x-www-form-urlencoded',
                          'CONTENT_LENGTH' => data_.length.to_s(10),
@@ -77,23 +82,32 @@ node=nil
                          'HTTP_COOKIE' => ctx.cookie
         bash.run_action(:run)
 
-        # parse headers from php-cgi results
-        headers = []
+        # get request response
+        response = File.open(session_tmp.path).read
+
+        # parse headers and body from php-cgi results
+        ctx.response = { :body => '', :headers => [] }
         redirect = false
-        IO.foreach(session_tmp.path) do |s|
-          s = s.gsub(/[\r\n]/, '')
-          if s.empty? then
-            break
+        header_reading = true
+        response.lines do |s|
+          if header_reading then
+            header_reading = ! s.chomp.empty?
+            if header_reading then
+              ctx.response[:headers] += s.chomp.scan(/(\S+): ([^\r\n]+)/)
+            end
+          else
+            ctx.response[:body] += s
           end
-          headers += s.scan(/(\S+): ([^\r\n]+)/)
         end
-        headers.each do |header|
+
+        # check header and ...
+        ctx.response[:headers].each do |header|
           case header[0]
           when "Set-Cookie"
             ctx.cookie = header[1]
           when "Location"
             tmp = header[1].split('?', 2)
-            path   = 0 < tmp.length ? tmp[0] : ''
+            path_  = 0 < tmp.length ? tmp[0] : ''
             query_ = 1 < tmp.length ? tmp[1] : ''
             data_  = ""
             redirect = true
