@@ -13,6 +13,10 @@ Now, this cookbook you can in the following list:
 Requirements
 ============
 
+## Environment 
+
+- MySQL - piwik needs MySQL
+
 ## Cookbooks
 
 - `php` - ya-piwik needs php.
