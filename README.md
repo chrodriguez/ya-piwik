@@ -15,7 +15,7 @@ Requirements
 
 ## Environment 
 
-- MySQL - piwik needs MySQL
+- MySQL - piwik needs MySQL server
 
 ## Cookbooks
 
@@ -43,6 +43,12 @@ Attributes
     <td>String</td>
     <td>piwik install directory</td>
     <td><tt>'/var/www/html/piwik/'</tt></td>
+  </tr>
+  <tr>
+    <td><tt>['ya-piwik']['package']</tt></td>
+    <td>String</td>
+    <td>piwik package url</td>
+    <td><tt>'http://builds.piwik.org/piwik-latest.tar.gz'</tt></td>
   </tr>
   <tr>
     <td><tt>['ya-piwik']['fpm']['enable']</tt></td>

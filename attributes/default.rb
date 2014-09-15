@@ -9,6 +9,8 @@
 
 default['ya-piwik']['home'] = '/var/www/html/piwik/'
 
+default['ya-piwik']['package'] = 'http://builds.piwik.org/piwik-latest.tar.gz'
+
 default['ya-piwik']['fpm']['enable'] = true
 default['ya-piwik']['fpm']['user'] = 'nginx'
 default['ya-piwik']['fpm']['group'] = 'nginx'
