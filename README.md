@@ -1,4 +1,4 @@
-ya-piwik cookbook
+ya-piwik cookbook [![Build Status](https://travis-ci.org/sharkpp-cookbooks/ya-piwik.svg?branch=master)](https://travis-ci.org/sharkpp-cookbooks/ya-piwik)
 =================
 
 This cookbook is install and management for piwik.

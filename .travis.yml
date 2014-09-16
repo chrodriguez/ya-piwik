@@ -1,0 +1,11 @@
+language: ruby
+
+gemfile:
+ - Gemfile
+
+rvm:
+ - 1.9.3
+
+script:
+ - bundle install --path vendor/bundle
+ - bundle exec kitchen test
