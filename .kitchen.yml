@@ -16,6 +16,7 @@ suites:
       - recipe[ya-piwik::default]
     attributes:
       php:
+        use_atomic_repo: false
         mysql_module_edition: 'mysql'
       mysql:
         server_root_password: 'secret-password-here'

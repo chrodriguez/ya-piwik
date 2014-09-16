@@ -1,8 +1,8 @@
 DEPENDENCIES
   mysql
   php
-    git: git://github.com/sharkpp/chef-php.git
-    revision: 74cde12df5699ad7454b85ea77d9662d742660cb
+    git: git://github.com/priestjim/chef-php.git
+    revision: e3f612d0234d0afc6adc806285b2950b3f063e3a
   ya-piwik
     path: .
     metadata: true
@@ -23,12 +23,11 @@ GRAPH
     runit (~> 1.2)
     yum-epel (~> 0.3)
   ohai (2.0.1)
-  php (1.2.0)
+  php (1.2.3)
     apt (>= 0.0.0)
     build-essential (>= 0.0.0)
     xml (>= 0.0.0)
     yum (>= 0.0.0)
-    yumrepo (>= 0.0.0)
   rsyslog (1.12.2)
   runit (1.5.10)
     build-essential (>= 0.0.0)
@@ -45,5 +44,3 @@ GRAPH
     yum (~> 3.0)
   yum-mysql-community (0.1.10)
     yum (>= 3.0)
-  yumrepo (2.0.0)
-    yum (>= 2.3.0)
