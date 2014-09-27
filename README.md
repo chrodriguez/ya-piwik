@@ -237,6 +237,13 @@ Just include `ya-piwik` in your node's `run_list`:
 }
 ```
 
+Testing
+=======
+
+1. Fork the repository on Github
+2. `bundle install --path vendor/bundle`
+3. `bundle ex kitchen test`
+
 Contributing
 ============
 
