@@ -72,7 +72,8 @@ bash 'extract_piwik' do
   code <<-EOH
     tar xvf #{pkg_path} -C #{home} piwik
     mv #{home}/piwik/* #{home}
-    rmdir #{home}/piwik
+    rm -rf #{home}/piwik
+    mkdir -pm 0755 #{home}/tmp/{assets,cache,logs,tcpdf,templates_c,sessions}
     chown -R #{user}:#{group} #{home}/*
   EOH
   not_if { ::File.exists?("#{home}/index.php") }
