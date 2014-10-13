@@ -102,6 +102,10 @@ ruby_block "setup_piwik" do
 
     ctx = PhpHeadlessBrowser::Context.new(node.run_context)
     ctx.cwd = home
+#   ctx.user = user
+#   ctx.group = group
+
+    http_headers = { :host => 'localhost:10080' } # 実際にアクセスするホストに変更する
 
     # initialize piwik with create first user and site
     [
@@ -125,13 +129,13 @@ ruby_block "setup_piwik" do
       { :path => 'index.php', :query => [ "action=firstWebsiteSetup", "module=Installation" ],
                               :data =>  [ "siteName=MY%20FIRST%20SITE",
                                           "url=http://www.example.com/",
-                                          "timezone=Asia/Tokyo#{node['ya-piwik']['root']['user']}",
+                                          "timezone=Asia/Tokyo",##{node['ya-piwik']['root']['user']}",
                                           "ecommerce=0" ] },
     # { :path => 'index.php', :query => [ "action=trackingCode", "module=Installation" ], :data => [ ] },
       { :path => 'index.php', :query => [ "action=finished", "module=Installation" ], :data => [ ] }
     ].each do |w|
 
-      PhpHeadlessBrowser.run(ctx, w[:path], w[:query], w[:data])
+      PhpHeadlessBrowser.run(ctx, w[:path], w[:query], w[:data], http_headers)
 
       # show error message
       error_msg = ctx.response[:body].match(%r{<div class="error">(.+?)</div>}m)
@@ -153,6 +157,34 @@ ruby_block "setup_piwik" do
         end
       end
     end
+
+    bash = Chef::Resource::Script::Bash.new('fix mode', run_context)
+    bash.cwd #{home}
+    bash.code <<-EOH
+        chmod -R 0755 #{home}/tmp/{assets,cache,logs,tcpdf,templates_c,sessions}
+        chown -R #{user}:#{group} #{home}/*
+    EOH
+    bash.run_action(:run)
+
+# うまくいかない？ form_nonce をなんとかしないといけないかな？
+#    # login check
+#    ctx.reset_session()
+#    PhpHeadlessBrowser.run(ctx, 'index.php', '',
+#                           [ "form_login=#{node['ya-piwik']['root']['user']}",
+#                             "form_password=#{node['ya-piwik']['root']['pass']}",
+#                             "form_nonce=" ],
+#                           http_headers)
+##p '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+##p ctx.response[:body].to_s
+##p '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
+#        Chef::Log.debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n'#{ctx.response[:body][0,4096]}'\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
+#
+#    if ! ctx.response[:body].include(%r{module=Login&action=logout}m) then
+#p '***********************'
+#    end
+#    if ! ctx.response[:body].match(%r{module=Login&action=logout}m) then
+#p '***********************'
+#    end
 
   end
   action :run

@@ -12,26 +12,35 @@ module YaPiwik
 
     class Context
       attr_accessor :run_context
-      attr_accessor :cwd, :max_redirect
+      attr_accessor :cwd, :user, :group, :max_redirect
       attr_accessor :response, :cookie
 
       def initialize(run_context = nil)
         raise 'Chef::RunContext not present!' unless run_context.is_a?(Chef::RunContext)
         @run_context = run_context
-        @cwd = '/var/www/html/'
+        @cwd   = '/var/www/html/'
+        @user  = nil
+        @group = nil
         @max_redirect = 10 # maximum 10 redirect support
         @response = { :body => '', :headers => [] }
         @cookie = ''
       end
+
+      def reset_session()
+        @cookie = ''
+      end
     end
 
-    def run(ctx, path, query = [], data = [])
-      raise 'Context not present!' unless ctx.is_a?(Context)
+    def run(ctx, path, query = [], data = [], headers = {})
+      raise 'Invalid argument, ctx'     unless ctx.is_a?(Context)
+      raise 'Invalid argument, query'   unless query.is_a?(Array) or query.is_a?(String)
+      raise 'Invalid argument, data'    unless data.is_a?(Array) or data.is_a?(String)
+      raise 'Invalid argument, headers' unless headers.is_a?(Hash)
 
       session_tmp = Tempfile.new('session')
 
-      query_ = query.join("&")
-      data_  = data.join("&")
+      query_ = query.is_a?(String) ? query : query.join("&")
+      data_  = data.is_a?(String)  ? data  : data.join("&")
 
       i = 0
       while i < ctx.max_redirect && 0 < ctx.max_redirect
@@ -51,6 +60,8 @@ module YaPiwik
         # execute php-cgi
         bash = Chef::Resource::Script::Bash.new('execute php-cgi', ctx.run_context)
         bash.cwd ctx.cwd
+        bash.user ctx.user ? ctx.user : bash.user
+        bash.group ctx.group ? ctx.group : bash.group
         bash.code <<-EOH
           echo '#{data_}' | php-cgi > "#{session_tmp.path}"
         EOH
@@ -73,9 +84,24 @@ module YaPiwik
                          'SERVER_PORT' => port,
                          'SERVER_NAME' => host,
                          'REDIRECT_STATUS' => "CGI",
-                         'HTTP_HOST' => "#{host}:#{port}",
-                         'HTTP_COOKIE' => ctx.cookie
-        bash.run_action(:run)
+                         'HTTP_HOST' => headers.has_key?(:host) ? headers[:host] : "#{host}:#{port}",
+                         'HTTP_COOKIE' => ctx.cookie,
+                         'HTTP_REFERER' => headers.has_key?(:referer) ? headers[:referer] : '',
+                         'HTTP_USER_AGENT' => headers.has_key?(:user_agent) ? headers[:user_agent] : 'php5'
+#        begin
+            bash.run_action(:run)
+#        rescue Mixlib::ShellOut::ShellCommandFailed
+#            bash.user nil
+#            bash.group nil
+#            bash.code <<-EOH
+#              prm1="#{ctx.user ? '-u ' + ctx.user : ''}"
+#              prm2="#{ctx.group ? '-g ' + ctx.group : ''}"
+#              if [ -n "$prm1" -o -n "$prm2" ] ; then
+#                  echo '#{data_}' | sudo $prm1 $prm2 -n -- php-cgi > "#{session_tmp.path}"
+#              fi
+#            EOH
+#            bash.run_action(:run)
+#        end
 
         # get request response
         response = File.open(session_tmp.path).read
